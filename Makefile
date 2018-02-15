@@ -7,9 +7,6 @@ GCFLAGS=   -ldflags "-w"
 DEBUGFLAGS=-gcflags "-N -l"
 
 all:
-	make deps
-	make gentoken
-	make tac
 	make gogo
 
 .PHONY: gentoken tac gogo clean test

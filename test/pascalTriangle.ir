@@ -1,0 +1,39 @@
+0, func, main
+0, scanInt, rows
+0, =, coef, 1
+0, declStr, spc, "  "
+0, declStr, threeSpc, "   "
+0, declStr, newline, "\n"
+0, =, i, 0
+0, label, outerFor
+0, bge, exit, i, rows
+0, =, space, 1
+0, label, spaces
+0, -, temp, rows, i
+0, bgt, innerFor, space, temp
+0, printStr, spc
+0, +, space, space, 1
+0, j, spaces
+0, =, ji, 0
+0, label, innerFor
+0, bgt, newExit, ji, i
+0, beq, labelIf, ji, 0
+0, beq, labelIf, i, 0
+0, -, temp, i, ji
+0, +, temp, temp, 1
+0, /, temp, temp, ji
+0, *, coef, coef, temp
+0, j, labelCoef
+0, label, labelIf
+0, =, coef, 1
+0, label, labelCoef
+0, printStr, threeSpc
+0, printInt, coef, coef
+0, +, ji, ji, 1
+0, j, innerFor
+0, label, newExit
+0, printStr, newline
+0, +, i, i, 1
+0, j, outerFor
+0, label, exit
+0, ret,
