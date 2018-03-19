@@ -1,14 +1,11 @@
 CC=        go
 BIN=       ./bin
 SRC=       ./src
-CLEANDIR=  ./tmp
+CLEANDIR=  ./bin
 GCFLAGS=   -ldflags "-w"
 DEBUGFLAGS=-gcflags "-N -l"
 
 all:
-	make deps
-	make gentoken
-	make tac
 	make gogo
 
 .PHONY: gentoken tac gogo clean test
@@ -25,7 +22,7 @@ tac: $(SRC)/tac/tac.go
 	cd $(SRC)/tac; $(CC) install $(GCFLAGS)
 
 gogo: $(SRC)/main.go
-	$(CC) build $(GCFLAGS) -o $(BIN)/gogo $(SRC)/main.go
+	$(CC) build $(GCFLAGS) -o $(BIN)/parser $(SRC)/main.go
 
 parser: $(SRC)/parser/gen_html.go $(SRC)/parser/productions.go
 	$(CC) run $(SRC)/parser/productions.go | tac > $(SRC)/parser/output.txt && \
@@ -36,4 +33,3 @@ test:
 
 clean:
 	rm -rf $(CLEANDIR)
-	rm -rf $(BIN)

@@ -6,13 +6,14 @@ set -euo pipefail
 srcDir=$(dirname "$0")/..
 binDir="$srcDir/bin"
 testDir="$srcDir/test"
+executable="parser"
 testName=
 
 checkBuildStatus() {
-    if [ ! -e "$binDir/gogo" ]; then
+    if [ ! -e "$binDir/$executable" ]; then
 	# http://mywiki.wooledge.org/BashFAQ/105
 	# http://fvue.nl/wiki/Bash:_Error_handling
-	( cd "$srcDir" && make gogo )
+	( cd "$srcDir" && make )
     fi
 }
 
@@ -25,7 +26,7 @@ runIRTests() {
 	# Remove everything after and including the last '.'
 	testName=$(echo "$f" | sed -E 's/(.*)\.(.*)/\1/')
 	rm -f "$testName.asm"
-	"$binDir/gogo" "$f" > "$testName.asm"
+	"$binDir/$executable" "$f" > "$testName.asm"
     done
 }
 
@@ -35,7 +36,7 @@ runParserTests() {
 	# Remove everything after and including the last '.'
 	testName=$(echo "$f" | sed -E 's/(.*)\.(.*)/\1/')
 	rm -f "$testName.html"
-	"$binDir/gogo" "$f" > "$testName.html"
+	"$binDir/$executable" "$f" > "$testName.html"
     done
 }
 

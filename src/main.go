@@ -4,25 +4,13 @@ import (
 	"log"
 	"os"
 
-	"gogo/src/asm"
-	"gogo/src/gentoken"
-	"gogo/src/parser"
-	"gogo/src/tac"
+	"asgn3/src/gentoken"
+	"asgn3/src/parser"
 )
 
 // GenToken generates the tokens returned by lexer for the input program.
 func GenToken(file string) {
 	gentoken.PrintTokens(file)
-}
-
-// GenAsm generates the assembly code using the IR generated from the input program.
-func GenAsm(file string) {
-	f, err := os.Open(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	asm.CodeGen(tac.GenTAC(f))
 }
 
 // GenRightmostDerivation generates the rightmost derivations used in the bottom-up
