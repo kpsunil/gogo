@@ -6,7 +6,7 @@ GCFLAGS=   -ldflags "-w"
 DEBUGFLAGS=-gcflags "-N -l"
 
 all:
-	make deps
+	# make deps
 	make gentoken
 	make tac
 	make gogo

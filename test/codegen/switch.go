@@ -1,3 +1,5 @@
+import "../../test/codegen/blocks.go"
+
 func main() {
 	a := 1
 	switch a {
