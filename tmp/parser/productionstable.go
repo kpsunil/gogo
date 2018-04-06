@@ -4,9 +4,11 @@ package parser
 
 import (
 	"fmt"
+	"io/ioutil"
 	"regexp"
 	"strings"
 
+	"gogo/tmp/lexer"
 	"gogo/tmp/token"
 )
 
@@ -79,7 +81,21 @@ var productionsTable = ProdTab{
 	},
 	ProdTabEntry{
 		String: `SourceFile : PackageClause terminator RepeatTerminator RepeatImportDecl	<< func() (Attrib, error) {
-                        return Node{"", X[0].(Node).code}, nil
+                        imports := strings.Split(X[3].(Node).place, ",")
+                        for _, v := range imports {
+                                fmt.Println(strings.TrimSpace(v))
+                        }
+
+                        // Try generating code for the first import.
+                        f := strings.Trim(imports[0], "\"")
+                        src, err := ioutil.ReadFile(f)
+                        if err != nil {
+                                return nil, err
+                        }
+                        s := lexer.NewLexer(src)
+                        fmt.Println(s.Scan())
+
+                        return Node{"", X[3].(Node).code}, nil
                 } () >>`,
 		Id:         "SourceFile",
 		NTType:     2,
@@ -87,16 +103,31 @@ var productionsTable = ProdTab{
 		NumSymbols: 4,
 		ReduceFunc: func(X []Attrib) (Attrib, error) {
 			return func() (Attrib, error) {
-				return Node{"", X[0].(Node).code}, nil
+				imports := strings.Split(X[3].(Node).place, ",")
+				for _, v := range imports {
+					fmt.Println(strings.TrimSpace(v))
+				}
+
+				// Try generating code for the first import.
+				f := strings.Trim(imports[0], "\"")
+				src, err := ioutil.ReadFile(f)
+				if err != nil {
+					return nil, err
+				}
+				s := lexer.NewLexer(src)
+				fmt.Println(s.Scan())
+
+				return Node{"", X[3].(Node).code}, nil
 			}()
 		},
 	},
 	ProdTabEntry{
 		String: `RepeatImportDecl : ImportDecl terminator RepeatTerminator RepeatImportDecl	<< func() (Attrib, error) {
                                 n := Node{"", []string{}}
-                                n.code = append(n.code, X[0].(Node).code...)
-                                n.code = append(n.code, X[3].(Node).code...)
-                                n.code = append(n.code, "\n")
+                                n.place = fmt.Sprintf("%s, %s", X[0].(Node).place, X[3].(Node).place)
+                                // n.code = append(n.code, X[0].(Node).code...)
+                                // n.code = append(n.code, X[3].(Node).code...)
+                                // n.code = append(n.code, "\n")
                                 return n, nil
                         } () >>`,
 		Id:         "RepeatImportDecl",
@@ -106,9 +137,10 @@ var productionsTable = ProdTab{
 		ReduceFunc: func(X []Attrib) (Attrib, error) {
 			return func() (Attrib, error) {
 				n := Node{"", []string{}}
-				n.code = append(n.code, X[0].(Node).code...)
-				n.code = append(n.code, X[3].(Node).code...)
-				n.code = append(n.code, "\n")
+				n.place = fmt.Sprintf("%s, %s", X[0].(Node).place, X[3].(Node).place)
+				// n.code = append(n.code, X[0].(Node).code...)
+				// n.code = append(n.code, X[3].(Node).code...)
+				// n.code = append(n.code, "\n")
 				return n, nil
 			}()
 		},

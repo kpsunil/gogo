@@ -39,10 +39,12 @@ _escapeChar : '\\' 'n' | '\\' 'r' | '\\' 't' ;
 <<
 import(
         "fmt"
+        "io/ioutil"
         "regexp"
         "strings"
 
         "gogo/tmp/token"
+        "gogo/tmp/lexer"
 )
 
 type Node struct {
@@ -71,16 +73,31 @@ Start : SourceFile
 // SourceFile : PackageClause terminator RepeatTerminator RepeatImportDecl RepeatTopLevelDecl
 SourceFile : PackageClause terminator RepeatTerminator RepeatImportDecl
                 << func() (Attrib, error) {
-                        return Node{"", $0.(Node).code}, nil
+                        imports := strings.Split($3.(Node).place, ",")
+                        for _, v := range imports {
+                                fmt.Println(strings.TrimSpace(v))
+                        }
+
+                        // Try generating code for the first import.
+                        f := strings.Trim(imports[0], "\"")
+                        src, err := ioutil.ReadFile(f)
+                        if err != nil {
+                                return nil, err
+                        }
+                        s := lexer.NewLexer(src)
+                        fmt.Println(s.Scan())
+
+                        return Node{"", $3.(Node).code}, nil
                 } () >>
            ;
 
 RepeatImportDecl : ImportDecl terminator RepeatTerminator RepeatImportDecl
                         << func() (Attrib, error) {
                                 n := Node{"", []string{}}
-                                n.code = append(n.code, $0.(Node).code...)
-                                n.code = append(n.code, $3.(Node).code...)
-                                n.code = append(n.code, "\n")
+                                n.place = fmt.Sprintf("%s, %s", $0.(Node).place, $3.(Node).place)
+                                // n.code = append(n.code, $0.(Node).code...)
+                                // n.code = append(n.code, $3.(Node).code...)
+                                // n.code = append(n.code, "\n")
                                 return n, nil
                         } () >>
                  | empty
