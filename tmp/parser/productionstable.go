@@ -93,7 +93,11 @@ var productionsTable = ProdTab{
                                 return nil, err
                         }
                         s := lexer.NewLexer(src)
-                        fmt.Println(s.Scan())
+                        p := NewParser()
+                        _, err = p.Parse(s)
+                        if err != nil {
+                                return nil, err
+                        }
 
                         return Node{"", X[3].(Node).code}, nil
                 } () >>`,
@@ -115,7 +119,11 @@ var productionsTable = ProdTab{
 					return nil, err
 				}
 				s := lexer.NewLexer(src)
-				fmt.Println(s.Scan())
+				p := NewParser()
+				_, err = p.Parse(s)
+				if err != nil {
+					return nil, err
+				}
 
 				return Node{"", X[3].(Node).code}, nil
 			}()
