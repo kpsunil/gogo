@@ -87,12 +87,16 @@ var productionsTable = ProdTab{
                         }
 
                         // Try generating code for the first import.
+			// NOTE: The following is a step towards trying to generate IR instructions
+			// corresponding to all the imports and collate them together and then
+			// generate the overall assembly code.
                         f := strings.Trim(imports[0], "\"")
                         src, err := ioutil.ReadFile(f)
                         if err != nil {
                                 return nil, err
                         }
                         s := lexer.NewLexer(src)
+                        // ~~~~ Things work fine until this point. ~~~~
                         p := NewParser()
                         _, err = p.Parse(s)
                         if err != nil {
@@ -113,12 +117,16 @@ var productionsTable = ProdTab{
 				}
 
 				// Try generating code for the first import.
+				// NOTE: The following is a step towards trying to generate IR instructions
+				// corresponding to all the imports and collate them together and then
+				// generate the overall assembly code.
 				f := strings.Trim(imports[0], "\"")
 				src, err := ioutil.ReadFile(f)
 				if err != nil {
 					return nil, err
 				}
 				s := lexer.NewLexer(src)
+				// ~~~~ Things work fine until this point. ~~~~
 				p := NewParser()
 				_, err = p.Parse(s)
 				if err != nil {
