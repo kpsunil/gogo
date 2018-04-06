@@ -6,14 +6,14 @@ GCFLAGS=   -ldflags "-w"
 DEBUGFLAGS=-gcflags "-N -l"
 
 all:
-	# make deps
+	make deps
 	make gentoken
 	make tac
 	make gogo
 
 .PHONY: gentoken tac gogo clean test
 
-deps: $(SRC)/lang.bnf
+deps: $(SRC)/imports.bnf
 	scripts/check-gocc.sh
 
 gentoken: $(SRC)/gentoken/gentoken.go
