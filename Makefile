@@ -6,9 +6,9 @@ GCFLAGS=   -ldflags "-w"
 DEBUGFLAGS=-gcflags "-N -l"
 
 all:
-	make deps
-	make scanner
-	make tac
+	# make deps
+	# make scanner
+	# make tac
 	make gogo
 
 .PHONY: scanner tac gogo clean test
