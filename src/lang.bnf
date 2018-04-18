@@ -116,15 +116,8 @@ var (
 	tmpIndex   int
 	labelIndex int
 	varIndex   int
-	// funcSymtabCreated keeps track whether a symbol table corresponding to a
-	// function declaration has to be instantiated. This is because usually
-	// a new symbol table is created when the corresponding block begins.
-	// However, in case of functions the arguments also need to be added to
-	// the symbol table. Thus the symbol table is instantiated when the
-	// production rule corresponding to the arguments is reached and not
-	// when the block begins.
-	funcSymtabCreated bool
-	symTab            symTabType // symbol table for temporaries ; TODO: Update this.
+        funcFlip   int
+	symTab     symTabType // symbol table for temporaries ; TODO: Update this.
 	// currSymTab keeps track of the currently active symbol table
 	// depending on scope.
 	currSymTab *SymInfo
@@ -132,6 +125,8 @@ var (
 	// NOTE: structs and functions can only be declared globally.
 	globalSymTab symTabType
 )
+
+
 
 func init() {
 	symTab = make(symTabType)
@@ -803,11 +798,20 @@ PrimaryExpr : Operand
 //                       fmt.Println("Conversion");
 //                       return nil, nil
 //                 } () >>
-//             | PrimaryExpr Selector
-//                 << func() (Attrib, error) {
-//                       fmt.Println("PrimaryExpr Selector");
-//                       return nil, nil
-//                 } () >>
+            | PrimaryExpr Selector
+                << func() (Attrib, error) {
+                      varName := fmt.Sprintf("%s.%s", $0.(Node).place, $1.(Node).place)
+                      symTabEntry, found := SearchInScope(varName)
+                      if found {
+                            if _, ok := globalSymTab[varName]; ok {
+                                        return nil, errors.New(fmt.Sprintf("%s not in scope", varName) )
+                        	} else {
+                                        return Node{symTabEntry[0], []string{}}, nil
+                        	}
+                      } else {
+                             return nil, errors.New(fmt.Sprintf("%s not in scope", varName) )
+                      }
+                } () >>
             | PrimaryExpr Index
                 << func() (Attrib, error) {
                         n := Node{"", []string{}}
@@ -1125,12 +1129,11 @@ OperandName : identifier
 // // TypeAssertion  = "." "(" Type ")" .
 // // Arguments      = "(" [ ( ExpressionList | Type [ "," ExpressionList ] ) [ "..." ] [ "," ] ] ")" .
 // // Conversion = Type "(" Expression [ "," ] ")"
-// Selector : "." identifier
-//               << func() (Attrib, error) {
-//                     fmt.Println("\".\" identifier");
-//                     return nil, nil
-//               } () >>
-//          ;
+Selector : "." identifier
+              << func() (Attrib, error) {
+                    return Node{string($1.(*token.Token).Lit), []string{}}, nil
+              } () >>
+         ;
 //
 Index : "[" Expression "]"
                 << func() (Attrib, error) {
@@ -1264,14 +1267,16 @@ FunctionDecl : kwdFunc FunctionName Signature FunctionBody
                 << func() (Attrib, error) {
                         n := Node{"", []string{fmt.Sprintf("func, %s", $1.(Node).place)}}
                         for k, v := range $2.(Node).code {
+                              // if v == "" {
+                              //       break
+                              // }
                               n.code = append(n.code, fmt.Sprintf("=, %s, %s.%d", v, $1.(Node).place, k))
                         }
                         n.code = append(n.code, $3.(Node).code...)
-                        funcSymtabCreated = false
+                        funcFlip = 0
                         return n, nil
                 } () >>
-             // TODO Handle function declarations without body.
-             // | kwdFunc FunctionName Signature
+             // | kwdFunc FunctionName Signaturer
              ;
 
 // Signature      = Parameters [ Result ] .
@@ -1281,12 +1286,10 @@ FunctionDecl : kwdFunc FunctionName Signature FunctionBody
 // ParameterDecl  = [ IdentifierList ] [ "..." ] Type .
 Signature : Parameters
             << func() (Attrib, error) {
-                      // The parent symbol table in case of function declaration
-                      // will be nil as functions can only be declared globally.
-                      childSymTab := SymInfo{make(symTabType), currSymTab}
+                      currSymTab = &SymInfo{make(symTabType), nil}
                       // Update the current symbol table to point to the newly
                       // created symbol table.
-                      currSymTab = &childSymTab
+                      // currSymTab = &childSymTab
                       for _, v := range $0.(Node).code {
                             if v == "" {
                                   break
@@ -1760,9 +1763,11 @@ Block : "{" Marker RepeatTerminator StatementList "}"
                 << func() (Attrib, error) {
                         // start of block
                         if  currSymTab.parent != nil {
-                                currSymTab = currSymTab.parent // end of block
+                              currSymTab = currSymTab.parent            // end of block
+
                         } else {
-                                currSymTab = nil
+                              currSymTab = nil
+
                         }
                         return Node{"", $3.(Node).code}, nil
                 } () >>
@@ -1772,16 +1777,13 @@ Block : "{" Marker RepeatTerminator StatementList "}"
 // table is instantiated here.
 Marker : empty
                 << func() (Attrib, error) {
-                        if funcSymtabCreated {
-                                // The symbol table for functions is created when the
-                                // rule for Signature is reached so that the arguments
-                                // can also be added.
-                                childSymTab := SymInfo{make(symTabType), currSymTab}
-                                // Update the current symbol table to point to the newly
-                                // created symbol table.
-                                currSymTab = &childSymTab
+                        if funcFlip == 1{
+                              childSymTab := SymInfo{make(symTabType), currSymTab}
+                              // Update the current symbol table to point to the newly
+                              // created symbol table.
+                              currSymTab = &childSymTab
                         } else {
-                                funcSymtabCreated = true
+                              funcFlip = 1
                         }
                         return nil, nil
                 } () >>
@@ -2348,6 +2350,8 @@ ShortVarDecl : IdentifierList shortAssign ExpressionList
                                 }
                                 // TODO: Multiple struct initializations are not handled currently.
                                 structName := $0.(Node).code[0]
+                                // keeping structName in the symbol table with type as Struct
+                                currSymTab.varSymTab[structName] = []string{structName, "struct"}
                                 // The individual struct member initializers can contain
                                 // expressions whose code need to be added before the
                                 // members are initialized.
@@ -2361,11 +2365,13 @@ ShortVarDecl : IdentifierList shortAssign ExpressionList
                                         } else {
                                                 // (Initialized) member values are located at odd locations.
                                                 varVal = v
+                                                renamedVar := RenameVariable(fmt.Sprintf("%s.%s", structName, varName))
+                                                currSymTab.varSymTab[fmt.Sprintf("%s.%s", structName, varName)] = []string{renamedVar, "int"}
                                                 // TODO: Add the struct initializations to symbol table. Also,
                                                 // handle member accesses as -
                                                 //      node := Node{1}
                                                 //      b := node.val  // member access
-                                                n.code = append(n.code, fmt.Sprintf("=, %s.%s, %s", structName, varName, varVal))
+                                                n.code = append(n.code, fmt.Sprintf("=, %s, %s", renamedVar, varVal))
                                         }
                                 }
                         } else {
